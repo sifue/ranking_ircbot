@@ -1,4 +1,6 @@
 .idea/
+.idea_modules/
 ranking_ircbot.iml
 target/
 ranking_ircbot.properties
+ranking_ircbot.h2.db
