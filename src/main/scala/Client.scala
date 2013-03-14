@@ -7,6 +7,8 @@ import java.nio.charset.Charset
 import java.sql.Timestamp
 import scala.slick.driver.H2Driver.simple._
 import Database.threadLocalSession
+import util.matching.Regex
+import util.Random
 
 class Client extends IrcAdaptor {
   val conf = RankingIrcbot.getConf()
@@ -26,6 +28,8 @@ class Client extends IrcAdaptor {
   irc.addMessageListener(this)  
   irc.connect()
 
+  val random = new Random()
+
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     try {
       handleLog(target, sender, "message", message)
@@ -34,6 +38,8 @@ class Client extends IrcAdaptor {
       if (message.contains("weeklyranking>")) sendRankingWeek(target)
       if (message.contains("monthlyranking>")) sendRankingMonth(target)
       if (message.contains("yearlyranking>")) sendRankingYear(target)
+      if (message.contains(" 曰く")) sendWise(target, message)
+      if (message.contains("覚えろ:")) handleWise(target, sender, "message", message)
       if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick(), target.getName)
     } catch { case e : Throwable =>
       e.printStackTrace()
@@ -94,6 +100,21 @@ class Client extends IrcAdaptor {
     }
   }
 
+  private def sendWise(target: Channel, message: String) {
+    val p : Regex = "(.*) 曰く".r;
+    message match {case p(nickname) =>
+      Database.forURL(url, driver = driver) withSession {
+        val q = (for {r <- WiseRecord} yield r)
+          .where(_.channel is target.getName)
+          .where(_.nickname >= nickname)
+        val length: Int = q.list().length
+        var wiseMessage = q.list().apply(random.nextInt(length))
+        wiseMessage._5
+        sendNotice(nickname + ": " + wiseMessage._5, target.getName)
+      }
+    }
+  }
+
   override def onNotice(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     handleLog(target, sender, "notice", message)
   }
@@ -106,6 +127,22 @@ class Client extends IrcAdaptor {
           contentType,
           message,
           new Timestamp(System.currentTimeMillis())))
+    }
+  }
+
+  private def handleWise(target: Channel, sender: User, contentType: String, message: String) {
+    val p : Regex = ".*覚えろ:([^ ]+) (.*)".r;
+    message match {case p(nickname, wiseMessage) =>
+      if (nickname.isEmpty || wiseMessage.isEmpty) return
+      Database.forURL(url, driver = driver) withSession {
+        WiseRecord.autoInc.insert(
+          (target.getName,
+            nickname,
+            contentType,
+            wiseMessage,
+            new Timestamp(System.currentTimeMillis())))
+        sendNotice(nickname + ": " + wiseMessage + " を覚えました", target.getName)
+      }
     }
   }
 
