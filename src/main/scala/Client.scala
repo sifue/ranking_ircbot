@@ -150,10 +150,14 @@ class Client extends IrcAdaptor {
     }
   }
 
-
-
   override def onNotice(irc: IrcConnection, sender: User, target: Channel, message: String) = {
-    handleLog(target, sender, "notice", message)
+    try {
+      handleLog(target, sender, "notice", message)
+    } catch {
+      case e: Throwable =>
+        e.printStackTrace()
+        sendMessage(e.getMessage, target.getName)
+    }
   }
 
   private def handleLog(target: Channel, sender: User, contentType: String, message: String) {
