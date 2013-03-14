@@ -13,4 +13,6 @@ object LogRecord extends Table[(Int, String, String, String, String, Timestamp)]
   def updateAt = column[Timestamp]("UPDATED_AT")
   def * = id ~ channel ~ nickname ~ contentType ~ content ~ updateAt
   def autoInc = channel ~ nickname ~ contentType ~ content ~ updateAt returning id
+  def idx1 = index("channel_updateAt", (channel, updateAt), unique = true)
+  def idx2 = index("channel_updateAt_nickname", (channel, updateAt, nickname), unique = true)
 }

@@ -5,12 +5,19 @@ import com.sorcix.sirc.Channel
 import java.nio.charset.Charset
 
 import java.sql.Timestamp
-import java.util.Date
 import scala.slick.driver.H2Driver.simple._
 import Database.threadLocalSession
 
+class Client extends IrcAdaptor {
+  val conf = RankingIrcbot.getConf()
+  val url = conf.getProperty("db.url")
+  val driver = conf.getProperty("db.driver")
 
-class Client(address: String, channel: String, nickname: String, charset: String) extends IrcAdaptor {
+  val address = conf.getProperty("irc.address")
+  val channels = conf.getProperty("irc.channel").split(" ")
+  val nickname = conf.getProperty("irc.nickname")
+  val charset = conf.getProperty("irc.charset")
+
   val irc = new IrcConnection
   irc.setServerAddress(address)
   irc.setCharset(Charset.forName(charset))
@@ -20,38 +27,98 @@ class Client(address: String, channel: String, nickname: String, charset: String
   irc.connect()
 
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
+    handleLog(target, sender, "message", message)
+    if (message.contains("hourlyranking>")) sendRankingHour(target)
+    if (message.contains("daylyranking>")) sendRankingDay(target)
+    if (message.contains("weeklyranking>")) sendRankingWeek(target)
+    if (message.contains("monthlyranking>")) sendRankingMonth(target)
+    if (message.contains("yearlyranking>")) sendRankingYear(target)
+    if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick(), target.getName)
+  }
 
-    Database.forURL("jdbc:h2:file:ranking_ircbot", driver = "org.h2.Driver") withSession {
+  def sendRankingHour(target: Channel) {
+    val title = "1時間の発言数ランキング"
+    val countedDate = new Timestamp(System.currentTimeMillis() - (1000 * 60 * 60));
+    sendRanking(target, countedDate, title)
+  }
+
+  def sendRankingDay(target: Channel) {
+    val title = "24時間の発言数ランキング"
+    val countedDate = new Timestamp(System.currentTimeMillis() - (1000 * 60 * 60 * 24));
+    sendRanking(target, countedDate, title)
+  }
+
+  def sendRankingWeek(target: Channel) {
+    val title = "1週間の発言数ランキング"
+    val countedDate = new Timestamp(System.currentTimeMillis() - (1000 * 60 * 60 * 24 * 7));
+    sendRanking(target, countedDate, title)
+  }
+
+  def sendRankingMonth(target: Channel) {
+    val title = "30日間の発言数ランキング"
+    val countedDate = new Timestamp(System.currentTimeMillis() - (1000 * 60 * 60 * 24 * 7 * 30));
+    sendRanking(target, countedDate, title)
+  }
+
+  def sendRankingYear(target: Channel) {
+    val title = "1年間の発言数ランキング"
+    val countedDate = new Timestamp(System.currentTimeMillis() - (1000 * 60 * 60 * 24 * 7 * 365));
+    sendRanking(target, countedDate, title)
+  }
+
+  private def sendRanking(target: Channel, countedDate: Timestamp, title: String) {
+    Database.forURL(url, driver = driver) withSession {
+      val q = (for {r <- LogRecord} yield r)
+        .where(_.channel is target.getName)
+        .where(_.updateAt >= countedDate)
+        .groupBy(_.nickname)
+      val qGroup = q.map {
+        case (nickname, grouped) => (nickname, grouped.length)
+      }
+      val qSort = qGroup.sortBy(_._2.desc)
+
+      val b = new StringBuilder
+      b.append(target.getName + "の" + title + " ")
+      qSort.list().zipWithIndex.foreach {
+        r =>
+          b.append("第%1$d位 %2$s %3$d回, ".format(r._2 + 1, r._1._1, r._1._2))
+      }
+      b.deleteCharAt(b.length - 1)
+      b.deleteCharAt(b.length - 1)
+      sendNotice(b.toString(), target.getName())
+    }
+  }
+
+  override def onNotice(irc: IrcConnection, sender: User, target: Channel, message: String) = {
+    handleLog(target, sender, "notice", message)
+  }
+
+  private def handleLog(target: Channel, sender: User, contentType: String, message: String) {
+    Database.forURL(url, driver = driver) withSession {
       LogRecord.autoInc.insert(
-        ( target.getName,
+        (target.getName,
           sender.getNick,
-          "message",
+          contentType,
           message,
           new Timestamp(System.currentTimeMillis())))
-
-      val q = for{
-        nickname <- Parameters[String]
-        t <- LogRecord if t.nickname is nickname
-      } yield t.id.count
-      val count : Int = q(sender.getNick()).firstOption getOrElse 0
-      sendMessage(sender.getNick() + " : " + count)
-    }
-
-    // ping
-    if (message.contains("ping " + nickname) || message.contains("PING " + nickname)) {
-      sendNotice("Working now. > " + sender.getNick())
     }
   }
 
   override def onConnect(irc: IrcConnection) = {
-    irc.createChannel(channel).join()
+    channels.foreach{irc.createChannel(_).join()}
   }
 
-  def sendMessage(message: String) = {
-    irc.createChannel(channel).send(message)
+  // 自分がオペレーターなら参加者全員にオペレータ権限を与える
+  override def onJoin(irc: IrcConnection, channel: Channel, user: User) = {
+    channel.giveOperator(user)
+  }
+
+  def sendMessage(message: String, channelName: String) = {
+    irc.createChannel(channelName).send(message)
   }
   
-  def sendNotice(notice: String) = {
-    irc.createChannel(channel).sendNotice(notice)
+  def sendNotice(notice: String, channelName: String) = {
+    irc.createChannel(channelName).sendNotice(notice)
   }
+
 }

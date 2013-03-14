@@ -3,23 +3,16 @@ import java.io.FileInputStream
 
 object RankingIrcbot {
   val configFilepath = "ranking_ircbot.properties"
+  val conf = new Properties
+  conf.load(new FileInputStream(configFilepath));
 
   def main(args: Array[String]) = {
-    val conf = getConfig()
-    val client = new Client(
-        conf.getProperty("irc.address"),
-        conf.getProperty("irc.channel"), 
-        conf.getProperty("irc.nickname"),
-        conf.getProperty("irc.charset"))
-    
-    val bootNotice = "Irc bot started successfly."
-    client.sendNotice(bootNotice);
+    val client = new Client
+    val bootNotice = "ランキングボットが起動しました"
     println(bootNotice)
   }
 
-  def getConfig() = {
-    val conf = new Properties
-    conf.load(new FileInputStream(configFilepath));
+  def getConf() = {
     conf
   }
 

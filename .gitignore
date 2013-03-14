@@ -4,3 +4,4 @@ ranking_ircbot.iml
 target/
 ranking_ircbot.properties
 ranking_ircbot.h2.db
+ranking_ircbot.trace.db
