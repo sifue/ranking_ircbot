@@ -38,6 +38,7 @@ class Client extends IrcAdaptor {
       if (message.contains("weeklyranking>")) sendRankingWeek(target)
       if (message.contains("monthlyranking>")) sendRankingMonth(target)
       if (message.contains("yearlyranking>")) sendRankingYear(target)
+      if (message.contains("wiseranking>")) sendRankingWise(target)
       if (message.contains(" 曰く")) sendWise(target, message)
       if (message.contains("覚えろ:")) handleWise(target, sender, "message", message)
       if (message.contains("消して:")) handleWiseDelete(target, sender, "message", message)
@@ -93,7 +94,35 @@ class Client extends IrcAdaptor {
       b.append(target.getName + "の" + title + " ")
       qSort.list().zipWithIndex.foreach {
         r =>
-          b.append("第%1$d位 %2$s %3$d回, ".format(r._2 + 1, r._1._1, r._1._2))
+          b.append("%1$d:%2$s %3$d回, ".format(r._2 + 1, r._1._1, r._1._2))
+      }
+      b.deleteCharAt(b.length - 1)
+      b.deleteCharAt(b.length - 1)
+      sendNotice(b.toString(), target.getName())
+    }
+  }
+
+  private def sendRankingWise(target: Channel) {
+    val title = "名言登録数のランキング"
+    Database.forURL(url, driver = driver) withSession {
+      val q = (for {r <- WiseRecord} yield r)
+        .where(_.channel is target.getName)
+        .groupBy(_.nickname)
+      val qGroup = q.map {
+        case (nickname, grouped) => (nickname, grouped.length)
+      }
+      val qSort = qGroup.sortBy(_._2.desc)
+
+      if (qSort.list().length == 0) {
+        sendNotice(target.getName + "の登録名言はありません", target.getName())
+        return
+      }
+
+      val b = new StringBuilder
+      b.append(target.getName + "の" + title + " ")
+      qSort.list().zipWithIndex.foreach {
+        r =>
+          b.append("%1$d:%2$s %3$d個, ".format(r._2 + 1, r._1._1, r._1._2))
       }
       b.deleteCharAt(b.length - 1)
       b.deleteCharAt(b.length - 1)

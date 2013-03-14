@@ -4,7 +4,7 @@ assemblySettings
 
 name := "ranking_ircbot"
 
-version := "2.2"
+version := "2.3"
 
 scalaVersion := "2.10.0"
 
