@@ -27,13 +27,18 @@ class Client extends IrcAdaptor {
   irc.connect()
 
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
-    handleLog(target, sender, "message", message)
-    if (message.contains("hourlyranking>")) sendRankingHour(target)
-    if (message.contains("daylyranking>")) sendRankingDay(target)
-    if (message.contains("weeklyranking>")) sendRankingWeek(target)
-    if (message.contains("monthlyranking>")) sendRankingMonth(target)
-    if (message.contains("yearlyranking>")) sendRankingYear(target)
-    if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick(), target.getName)
+    try {
+      handleLog(target, sender, "message", message)
+      if (message.contains("hourlyranking>")) sendRankingHour(target)
+      if (message.contains("daylyranking>")) sendRankingDay(target)
+      if (message.contains("weeklyranking>")) sendRankingWeek(target)
+      if (message.contains("monthlyranking>")) sendRankingMonth(target)
+      if (message.contains("yearlyranking>")) sendRankingYear(target)
+      if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick(), target.getName)
+    } catch { case e : Throwable =>
+      e.printStackTrace()
+      sendMessage(e.getMessage, target.getName)
+    }
   }
 
   def sendRankingHour(target: Channel) {
@@ -110,7 +115,12 @@ class Client extends IrcAdaptor {
 
   // 自分がオペレーターなら参加者全員にオペレータ権限を与える
   override def onJoin(irc: IrcConnection, channel: Channel, user: User) = {
-    channel.giveOperator(user)
+    try {
+      channel.giveOperator(user)
+    } catch { case e : Throwable =>
+      e.printStackTrace()
+      sendMessage(e.getMessage, channel.getName )
+    }
   }
 
   def sendMessage(message: String, channelName: String) = {

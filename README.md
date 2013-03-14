@@ -24,7 +24,7 @@ irc.charset = UTF-8
 設定の後、
 
 ```sh
-$java -jar ranking_ircbot-assembly-1.0.jar
+$java -jar ranking_ircbot-assembly-2.0.jar
 ```
 
 で実行することができます。
