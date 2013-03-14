@@ -29,6 +29,7 @@ class Client extends IrcAdaptor {
   irc.connect()
 
   val random = new Random()
+  val detail = "https://github.com/sifue/ranking_ircbot"
 
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     try {
@@ -42,7 +43,7 @@ class Client extends IrcAdaptor {
       if (message.contains(" 曰く")) sendWise(target, message)
       if (message.contains("覚えろ:")) handleWise(target, sender, "message", message)
       if (message.contains("消して:")) handleWiseDelete(target, sender, "message", message)
-      if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick(), target.getName)
+      if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick() + " " + detail, target.getName)
     } catch { case e : Throwable =>
       e.printStackTrace()
       sendMessage(e.getMessage, target.getName)
