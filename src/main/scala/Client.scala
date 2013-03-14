@@ -40,6 +40,7 @@ class Client extends IrcAdaptor {
       if (message.contains("yearlyranking>")) sendRankingYear(target)
       if (message.contains(" 曰く")) sendWise(target, message)
       if (message.contains("覚えろ:")) handleWise(target, sender, "message", message)
+      if (message.contains("消して:")) handleWiseDelete(target, sender, "message", message)
       if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick(), target.getName)
     } catch { case e : Throwable =>
       e.printStackTrace()
@@ -106,14 +107,20 @@ class Client extends IrcAdaptor {
       Database.forURL(url, driver = driver) withSession {
         val q = (for {r <- WiseRecord} yield r)
           .where(_.channel is target.getName)
-          .where(_.nickname >= nickname)
+          .where(_.nickname is nickname)
         val length: Int = q.list().length
+        if (length == 0) {
+          sendNotice(nickname + "の発言は登録されていません", target.getName)
+          return
+        }
         var wiseMessage = q.list().apply(random.nextInt(length))
-        wiseMessage._5
+        if (wiseMessage._5.isEmpty) return;
         sendNotice(nickname + ": " + wiseMessage._5, target.getName)
       }
     }
   }
+
+
 
   override def onNotice(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     handleLog(target, sender, "notice", message)
@@ -131,7 +138,7 @@ class Client extends IrcAdaptor {
   }
 
   private def handleWise(target: Channel, sender: User, contentType: String, message: String) {
-    val p : Regex = ".*覚えろ:([^ ]+) (.*)".r;
+    val p : Regex = ".*覚えろ:([^:]+) ([^ ]+)".r;
     message match {case p(nickname, wiseMessage) =>
       if (nickname.isEmpty || wiseMessage.isEmpty) return
       Database.forURL(url, driver = driver) withSession {
@@ -141,10 +148,26 @@ class Client extends IrcAdaptor {
             contentType,
             wiseMessage,
             new Timestamp(System.currentTimeMillis())))
-        sendNotice(nickname + ": " + wiseMessage + " を覚えました", target.getName)
+        sendNotice((nickname + ": " + wiseMessage + " を覚えました"), target.getName)
       }
     }
   }
+
+  private def handleWiseDelete(target: Channel, sender: User, contentType: String, message: String) {
+    val p : Regex = ".*消して:([^:]+) ([^ ]+)".r;
+    message match {case p(nickname, wiseMessage) =>
+      if (nickname.isEmpty || wiseMessage.isEmpty) return
+      Database.forURL(url, driver = driver) withSession {
+        val q = (for {r <- WiseRecord} yield r)
+          .where(_.channel is target.getName)
+          .where(_.nickname is nickname)
+          .where(_.content is wiseMessage)
+        q.delete
+        sendNotice((nickname + ": " + wiseMessage + " を消しました"), target.getName)
+      }
+    }
+  }
+
 
   override def onConnect(irc: IrcConnection) = {
     channels.foreach{irc.createChannel(_).join()}
@@ -154,6 +177,16 @@ class Client extends IrcAdaptor {
   override def onJoin(irc: IrcConnection, channel: Channel, user: User) = {
     try {
       channel.giveOperator(user)
+    } catch { case e : Throwable =>
+      e.printStackTrace()
+      sendMessage(e.getMessage, channel.getName )
+    }
+  }
+
+  // 蹴られても帰ってくる
+  override def onKick(irc: IrcConnection, channel: Channel, sender: User, user: User, message: String) = {
+    try {
+      irc.createChannel(channel.getName).join()
     } catch { case e : Throwable =>
       e.printStackTrace()
       sendMessage(e.getMessage, channel.getName )
