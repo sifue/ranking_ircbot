@@ -53,7 +53,7 @@ hourlyranking>
 1時間の発言数ランキングの表示
 
 ```
-daylyranking>
+dailyranking>
 ```
 24時間の発言数ランキングの表示
 

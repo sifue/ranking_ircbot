@@ -35,7 +35,7 @@ class Client extends IrcAdaptor {
     try {
       handleLog(target, sender, "message", message)
       if (message.contains("hourlyranking>")) sendRankingHour(target)
-      if (message.contains("daylyranking>")) sendRankingDay(target)
+      if (message.contains("dailyranking>")) sendRankingDay(target)
       if (message.contains("weeklyranking>")) sendRankingWeek(target)
       if (message.contains("monthlyranking>")) sendRankingMonth(target)
       if (message.contains("yearlyranking>")) sendRankingYear(target)
