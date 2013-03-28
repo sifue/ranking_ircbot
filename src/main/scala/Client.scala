@@ -132,20 +132,21 @@ class Client extends IrcAdaptor {
   }
 
   private def sendWise(target: Channel, message: String) {
-    val p : Regex = "(.*) 曰く".r;
+    val p : Regex = "([^ ]*)[ ]+曰く".r;
     message match {case p(nickname) =>
       Database.forURL(url, driver = driver) withSession {
+        val trimmedNickname = nickname.trim
         val q = (for {r <- WiseRecord} yield r)
           .where(_.channel is target.getName)
-          .where(_.nickname is nickname)
+          .where(_.nickname is trimmedNickname)
         val length: Int = q.list().length
         if (length == 0) {
-          sendNotice(nickname + "の発言は登録されていません", target.getName)
+          sendNotice(trimmedNickname + "の発言は登録されていません", target.getName)
           return
         }
-        var wiseMessage = q.list().apply(random.nextInt(length))
+        var wiseMessage = random.shuffle(q.list()).head
         if (wiseMessage._5.isEmpty) return;
-        sendNotice(nickname + ": " + wiseMessage._5, target.getName)
+        sendNotice(trimmedNickname + ": " + wiseMessage._5, target.getName)
       }
     }
   }
@@ -174,15 +175,17 @@ class Client extends IrcAdaptor {
   private def handleWise(target: Channel, sender: User, contentType: String, message: String) {
     val p : Regex = ".*覚えろ:([^:]+) ([^ ]+)".r;
     message match {case p(nickname, wiseMessage) =>
-      if (nickname.isEmpty || wiseMessage.isEmpty) return
+      val trimmedNickname = nickname.trim
+      val trimmedWiseMessage = wiseMessage.trim
+      if (trimmedNickname.isEmpty || trimmedWiseMessage.isEmpty) return
       Database.forURL(url, driver = driver) withSession {
         WiseRecord.autoInc.insert(
           (target.getName,
-            nickname,
+            trimmedNickname,
             contentType,
-            wiseMessage,
+            trimmedWiseMessage,
             new Timestamp(System.currentTimeMillis())))
-        sendNotice((nickname + ": " + wiseMessage + " を覚えました"), target.getName)
+        sendNotice((trimmedNickname + ": " + trimmedWiseMessage + " を覚えました"), target.getName)
       }
     }
   }
@@ -190,14 +193,16 @@ class Client extends IrcAdaptor {
   private def handleWiseDelete(target: Channel, sender: User, contentType: String, message: String) {
     val p : Regex = ".*消して:([^:]+) ([^ ]+)".r;
     message match {case p(nickname, wiseMessage) =>
-      if (nickname.isEmpty || wiseMessage.isEmpty) return
+      val trimmedNickname = nickname.trim
+      val trimmedWiseMessage = wiseMessage.trim
+      if (trimmedNickname.isEmpty || trimmedWiseMessage.isEmpty) return
       Database.forURL(url, driver = driver) withSession {
         val q = (for {r <- WiseRecord} yield r)
           .where(_.channel is target.getName)
-          .where(_.nickname is nickname)
-          .where(_.content is wiseMessage)
+          .where(_.nickname is trimmedNickname)
+          .where(_.content is trimmedWiseMessage)
         q.delete
-        sendNotice((nickname + ": " + wiseMessage + " を消しました"), target.getName)
+        sendNotice((trimmedNickname + ": " + trimmedWiseMessage + " を消しました"), target.getName)
       }
     }
   }
