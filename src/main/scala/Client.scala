@@ -40,13 +40,13 @@ class Client extends IrcAdaptor {
       if (message.contains("monthlyranking>")) sendRankingMonth(target)
       if (message.contains("yearlyranking>")) sendRankingYear(target)
       if (message.contains("wiseranking>")) sendRankingWise(target)
-      if (message.contains(" 曰く")) sendWise(target, message)
+      if (message.contains("曰く")) sendWise(target, message)
       if (message.contains("覚えろ:")) handleWise(target, sender, "message", message)
       if (message.contains("消して:")) handleWiseDelete(target, sender, "message", message)
       if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick() + " " + detail, target.getName)
     } catch { case e : Throwable =>
       e.printStackTrace()
-      sendMessage(e.getMessage, target.getName)
+      sendMessage("例外発生: " + e.getMessage, target.getName)
     }
   }
 
@@ -132,7 +132,7 @@ class Client extends IrcAdaptor {
   }
 
   private def sendWise(target: Channel, message: String) {
-    val p : Regex = "([^ ]*)[ ]+曰く".r;
+    val p : Regex = "([^曰]*)曰く".r;
     message match {case p(nickname) =>
       Database.forURL(url, driver = driver) withSession {
         val trimmedNickname = nickname.trim
@@ -157,7 +157,7 @@ class Client extends IrcAdaptor {
     } catch {
       case e: Throwable =>
         e.printStackTrace()
-        sendMessage(e.getMessage, target.getName)
+        sendMessage("例外発生: " + e.getMessage, target.getName)
     }
   }
 
@@ -218,7 +218,7 @@ class Client extends IrcAdaptor {
       channel.giveOperator(user)
     } catch { case e : Throwable =>
       e.printStackTrace()
-      sendMessage(e.getMessage, channel.getName )
+      sendMessage("例外発生: " + e.getMessage, channel.getName )
     }
   }
 
@@ -228,7 +228,7 @@ class Client extends IrcAdaptor {
       irc.createChannel(channel.getName).join()
     } catch { case e : Throwable =>
       e.printStackTrace()
-      sendMessage(e.getMessage, channel.getName )
+      sendMessage("例外発生: " + e.getMessage, channel.getName )
     }
   }
 
