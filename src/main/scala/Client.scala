@@ -233,11 +233,11 @@ class Client extends IrcAdaptor {
   }
 
   def sendMessage(message: String, channelName: String) = {
-    irc.createChannel(channelName).send(message)
+   message.grouped(400).foreach(s => irc.createChannel(channelName).send(s))
   }
   
   def sendNotice(notice: String, channelName: String) = {
-    irc.createChannel(channelName).sendNotice(notice)
+    notice.grouped(400).foreach(s => irc.createChannel(channelName).sendNotice(s))
   }
 
 }
