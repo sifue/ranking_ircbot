@@ -34,16 +34,16 @@ class Client extends IrcAdaptor {
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     try {
       handleLog(target, sender, "message", message)
-      if (message.contains("hourlyranking>")) sendRankingHour(target)
-      if (message.contains("dailyranking>")) sendRankingDay(target)
-      if (message.contains("weeklyranking>")) sendRankingWeek(target)
-      if (message.contains("monthlyranking>")) sendRankingMonth(target)
-      if (message.contains("yearlyranking>")) sendRankingYear(target)
-      if (message.contains("wiseranking>")) sendRankingWise(target)
-      if (message.contains("曰く")) sendWise(target, message)
-      if (message.contains("覚えろ:")) handleWise(target, sender, "message", message)
-      if (message.contains("消して:")) handleWiseDelete(target, sender, "message", message)
-      if (message.contains("ping " + nickname)) sendNotice("Working now. > " + sender.getNick() + " " + detail, target.getName)
+      if (message.startsWith("hourlyranking>")) sendRankingHour(target)
+      if (message.startsWith("dailyranking>")) sendRankingDay(target)
+      if (message.startsWith("weeklyranking>")) sendRankingWeek(target)
+      if (message.startsWith("monthlyranking>")) sendRankingMonth(target)
+      if (message.startsWith("yearlyranking>")) sendRankingYear(target)
+      if (message.startsWith("wiseranking>")) sendRankingWise(target)
+      if (message.endsWith("曰く")) sendWise(target, message)
+      if (message.startsWith("覚えろ:")) handleWise(target, sender, "message", message)
+      if (message.startsWith("消して:")) handleWiseDelete(target, sender, "message", message)
+      if (message.startsWith("ping " + nickname)) sendNotice("Working now. > " + sender.getNick() + " " + detail, target.getName)
     } catch { case e : Throwable =>
       e.printStackTrace()
       sendMessage("例外発生: " + e.getMessage, target.getName)
@@ -93,13 +93,19 @@ class Client extends IrcAdaptor {
 
       val b = new StringBuilder
       b.append(target.getName + "の" + title + " ")
-      qSort.list().zipWithIndex.foreach {
+      val list = qSort.list()
+      list.zipWithIndex.foreach {
         r =>
-          b.append("%1$d:%2$s %3$d回, ".format(r._2 + 1, r._1._1, r._1._2))
+          val n = r._2 + 1
+          b.append("%1$d:%2$s %3$d回, ".format(n, r._1._1, r._1._2))
+          // 10個 区切りまたは最後なら送信
+          if(n % 10 == 0 || n == list.size) {
+            b.deleteCharAt(b.length - 1)
+            b.deleteCharAt(b.length - 1)
+            sendNotice(b.toString(), target.getName())
+            b.clear()
+          }
       }
-      b.deleteCharAt(b.length - 1)
-      b.deleteCharAt(b.length - 1)
-      sendNotice(b.toString(), target.getName())
     }
   }
 
@@ -113,21 +119,27 @@ class Client extends IrcAdaptor {
         case (nickname, grouped) => (nickname, grouped.length)
       }
       val qSort = qGroup.sortBy(_._2.desc)
+      val list = qSort.list()
 
-      if (qSort.list().length == 0) {
+      if (list.length == 0) {
         sendNotice(target.getName + "の登録名言はありません", target.getName())
         return
       }
 
       val b = new StringBuilder
       b.append(target.getName + "の" + title + " ")
-      qSort.list().zipWithIndex.foreach {
+      list.zipWithIndex.foreach {
         r =>
-          b.append("%1$d:%2$s %3$d個, ".format(r._2 + 1, r._1._1, r._1._2))
+          val n = r._2 + 1
+          b.append("%1$d:%2$s %3$d個, ".format(n, r._1._1, r._1._2))
+          // 10個 区切りまたは最後なら送信
+          if(n % 10 == 0 || n == list.size) {
+            b.deleteCharAt(b.length - 1)
+            b.deleteCharAt(b.length - 1)
+            sendNotice(b.toString(), target.getName())
+            b.clear()
+          }
       }
-      b.deleteCharAt(b.length - 1)
-      b.deleteCharAt(b.length - 1)
-      sendNotice(b.toString(), target.getName())
     }
   }
 
@@ -233,11 +245,11 @@ class Client extends IrcAdaptor {
   }
 
   def sendMessage(message: String, channelName: String) = {
-   message.grouped(400).foreach(s => irc.createChannel(channelName).send(s))
+   message.grouped(400).foreach(s => irc.createChannel(channelName).send(s.trim + " "))
   }
   
   def sendNotice(notice: String, channelName: String) = {
-    notice.grouped(400).foreach(s => irc.createChannel(channelName).sendNotice(s))
+    notice.grouped(400).foreach(s => irc.createChannel(channelName).sendNotice(s.trim + " "))
   }
 
 }
