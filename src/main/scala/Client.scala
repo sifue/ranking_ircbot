@@ -163,7 +163,7 @@ class Client extends IrcAdaptor {
         }
         case _ => ("", "")
       }
-      if(!tweet.isEmpty) sendMessage(screenName + ": " + tweet, target.getName)
+      if(!tweet.isEmpty) sendNotice(screenName + ": " + tweet, target.getName)
     }
   }
 
