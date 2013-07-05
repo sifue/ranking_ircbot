@@ -31,9 +31,14 @@ class Client extends IrcAdaptor {
   val random = new Random()
   val detail = "https://github.com/sifue/ranking_ircbot"
 
+
+  val twitterEnable = conf.getProperty("twitter.enable").toBoolean
+  var twitterClient = if (twitterEnable ) new TwitterClient(conf) else null;
+
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     try {
       handleLog(target, sender, "message", message)
+      if (message.startsWith("@")) sendTweet(target, message)
       if (message.startsWith("hourlyranking>")) sendRankingHour(target)
       if (message.startsWith("dailyranking>")) sendRankingDay(target)
       if (message.startsWith("weeklyranking>")) sendRankingWeek(target)
@@ -140,6 +145,25 @@ class Client extends IrcAdaptor {
             b.clear()
           }
       }
+    }
+  }
+
+  private def sendTweet(target: Channel, message: String) {
+    if (twitterClient != null) {
+      val p : Regex = "@([0-9A-Za-z_]+)(| ([0-9]+))".r;
+      val (screenName, tweet) = message match {
+        case p(screenName, after, index) => {
+          if(index != null && index.toInt < 20) {
+            (screenName, twitterClient.getTweet(screenName, index.toInt))
+          } else if(index != null && index.toInt >= 20) {
+            ("例外発生", "20個以上前のtweetは参照できません")
+          } else {
+            (screenName, twitterClient.getTweet(screenName, 0))
+          }
+        }
+        case _ => ("", "")
+      }
+      if(!tweet.isEmpty) sendMessage(screenName + ": " + tweet, target.getName)
     }
   }
 

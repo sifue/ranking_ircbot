@@ -26,6 +26,11 @@ irc.nickname = ranking_ircbot
 irc.charset = UTF-8
 db.url = jdbc:h2:file:ranking_ircbot
 db.driver = org.h2.Driver
+twitter.enable = false
+twitter.consumer_key =
+twitter.consumer_secret =
+twitter.access_token =
+twitter.access_token_secret =
 ```
 以上のようにチャンネルはスペース区切りで複数設定することができます。
 日本語のチャンネル名は、[native2asciiのwebサービス](http://lithium.homedns.org/~shanq/bitsnbytes/native2ascii_en.html)などを利用して
@@ -97,3 +102,11 @@ wiseranking>
 ping {ircbot_nickname}
 ```
 Working now. > {nickname} https://github.com/sifue/ranking_ircbot と発言します。
+
+```
+@{screen_name}[ {0~19の整数}]
+```
+twitterのクライアントの設定をtrueにして、twitterアプリケーションの各種キーを設定すると、
+screen_name: {ツイートの内容}
+という形式で、screen_nameのツイッターのユーザーの0~19番目のインデックスの発言をは参照することができます。
+スペース{0~19の整数}を入力しない場合は最も最近のつぶやきがつぶやかれます。

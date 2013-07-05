@@ -4,9 +4,9 @@ assemblySettings
 
 name := "ranking_ircbot"
 
-version := "2.9"
+version := "2.10"
 
-scalaVersion := "2.10.0"
+scalaVersion := "2.10.2"
 
 libraryDependencies ++= List(
   "com.typesafe.slick" %% "slick" % "1.0.0",
