@@ -1,4 +1,4 @@
-import java.util.Properties
+import java.util.{Date, Properties}
 import java.io.FileInputStream
 
 object RankingIrcbot {
@@ -8,7 +8,7 @@ object RankingIrcbot {
 
   def main(args: Array[String]) = {
     new IrcClient
-    println("RankingIrcbot booted.")
+    println(s"RankingIrcbot booted at ${new Date().toString}")
   }
 
   def getConf() = {
