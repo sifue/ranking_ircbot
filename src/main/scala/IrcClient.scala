@@ -6,7 +6,6 @@ import java.nio.charset.Charset
 
 import java.sql.Timestamp
 import scala.slick.driver.H2Driver.simple._
-import Database.threadLocalSession
 import util.matching.Regex
 import util.Random
 
@@ -87,10 +86,10 @@ class IrcClient extends IrcAdaptor {
   }
 
   private def sendRanking(target: Channel, countedDate: Timestamp, title: String) {
-    Database.forURL(url, driver = driver) withSession {
+    Database.forURL(url, driver = driver) withSession { implicit session =>
       val q = (for {r <- LogRecord} yield r)
-        .where(_.channel is target.getName)
-        .where(_.updateAt >= countedDate)
+        .filter(_.channel === target.getName)
+        .filter(_.updateAt >= countedDate)
         .groupBy(_.nickname)
       val qGroup = q.map {
         case (nickname, grouped) => (nickname, grouped.length)
@@ -99,7 +98,7 @@ class IrcClient extends IrcAdaptor {
 
       val b = new StringBuilder
       b.append(target.getName + "の" + title + " ")
-      val list = qSort.list()
+      val list = qSort.list
       list.zipWithIndex.foreach {
         r =>
           val n = r._2 + 1
@@ -117,15 +116,15 @@ class IrcClient extends IrcAdaptor {
 
   private def sendRankingWise(target: Channel) {
     val title = "名言登録数のランキング"
-    Database.forURL(url, driver = driver) withSession {
+    Database.forURL(url, driver = driver) withSession { implicit session =>
       val q = (for {r <- WiseRecord} yield r)
-        .where(_.channel is target.getName)
+        .filter(_.channel === target.getName)
         .groupBy(_.nickname)
       val qGroup = q.map {
         case (nickname, grouped) => (nickname, grouped.length)
       }
       val qSort = qGroup.sortBy(_._2.desc)
-      val list = qSort.list()
+      val list = qSort.list
 
       if (list.length == 0) {
         sendNotice(target.getName + "の登録名言はありません", target.getName())
@@ -171,17 +170,17 @@ class IrcClient extends IrcAdaptor {
   private def sendWise(target: Channel, message: String) {
     val p : Regex = "([^曰]*)曰く".r;
     message match {case p(nickname) =>
-      Database.forURL(url, driver = driver) withSession {
+      Database.forURL(url, driver = driver) withSession { implicit session =>
         val trimmedNickname = nickname.trim
         val q = (for {r <- WiseRecord} yield r)
-          .where(_.channel is target.getName)
-          .where(_.nickname is trimmedNickname)
-        val length: Int = q.list().length
+          .filter(_.channel === target.getName)
+          .filter(_.nickname === trimmedNickname)
+        val length: Int = q.list.length
         if (length == 0) {
           sendNotice(trimmedNickname + "の発言は登録されていません", target.getName)
           return
         }
-        var wiseMessage = random.shuffle(q.list()).head
+        var wiseMessage = random.shuffle(q.list).head
         if (wiseMessage._5.isEmpty) return;
         sendNotice(trimmedNickname + ": " + wiseMessage._5, target.getName)
       }
@@ -199,13 +198,13 @@ class IrcClient extends IrcAdaptor {
   }
 
   private def handleLog(target: Channel, sender: User, contentType: String, message: String) {
-    Database.forURL(url, driver = driver) withSession {
-      LogRecord.autoInc.insert(
+    Database.forURL(url, driver = driver) withSession { implicit session =>
+      LogRecord.map(c => (c.channel, c.nickname, c.contentType, c.content, c.updateAt)) +=
         (target.getName,
           sender.getNick,
           contentType,
           message,
-          new Timestamp(System.currentTimeMillis())))
+          new Timestamp(System.currentTimeMillis()))
     }
   }
 
@@ -215,13 +214,13 @@ class IrcClient extends IrcAdaptor {
       val trimmedNickname = nickname.trim
       val trimmedWiseMessage = wiseMessage.trim
       if (trimmedNickname.isEmpty || trimmedWiseMessage.isEmpty) return
-      Database.forURL(url, driver = driver) withSession {
-        WiseRecord.autoInc.insert(
+      Database.forURL(url, driver = driver) withSession { implicit session =>
+        WiseRecord.map(c => (c.channel, c.nickname, c.contentType, c.content, c.updateAt)) +=
           (target.getName,
             trimmedNickname,
             contentType,
             trimmedWiseMessage,
-            new Timestamp(System.currentTimeMillis())))
+            new Timestamp(System.currentTimeMillis()))
         sendNotice((trimmedNickname + ": " + trimmedWiseMessage + " を覚えました"), target.getName)
       }
     }
@@ -233,11 +232,11 @@ class IrcClient extends IrcAdaptor {
       val trimmedNickname = nickname.trim
       val trimmedWiseMessage = wiseMessage.trim
       if (trimmedNickname.isEmpty || trimmedWiseMessage.isEmpty) return
-      Database.forURL(url, driver = driver) withSession {
+      Database.forURL(url, driver = driver) withSession { implicit session =>
         val q = (for {r <- WiseRecord} yield r)
-          .where(_.channel is target.getName)
-          .where(_.nickname is trimmedNickname)
-          .where(_.content is trimmedWiseMessage)
+          .filter(_.channel === target.getName)
+          .filter(_.nickname === trimmedNickname)
+          .filter(_.content === trimmedWiseMessage)
         q.delete
         sendNotice((trimmedNickname + ": " + trimmedWiseMessage + " を消しました"), target.getName)
       }

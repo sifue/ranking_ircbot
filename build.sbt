@@ -6,10 +6,10 @@ name := "ranking_ircbot"
 
 version := "3.0"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.11.2"
 
 libraryDependencies ++= List(
-  "com.typesafe.slick" %% "slick" % "1.0.0",
+  "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.sorcix" % "sirc" % "1.1.5",
   "org.twitter4j" % "twitter4j-core" % "4.0.2",
   "org.slf4j" % "slf4j-nop" % "1.6.4",
