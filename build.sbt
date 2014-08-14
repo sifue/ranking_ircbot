@@ -1,10 +1,10 @@
-import AssemblyKeys._ // put this at the top of the file
+import AssemblyKeys._
 
 assemblySettings
 
 name := "ranking_ircbot"
 
-version := "2.11"
+version := "3.0"
 
 scalaVersion := "2.10.2"
 
