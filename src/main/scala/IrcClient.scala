@@ -17,22 +17,33 @@ class IrcClient extends IrcAdaptor {
   val address = conf.getProperty("irc.address")
   val channels = conf.getProperty("irc.channel").split(" ")
   val nickname = conf.getProperty("irc.nickname")
-  val charset = conf.getProperty("irc.charset")
+  val charset = conf.getProperty("irc.charset", "UTF-8")
+  val username = conf.getProperty("irc.username", "")
+  val password = conf.getProperty("irc.password", "")
+  val port = conf.getProperty("irc.port", "6667").toInt
+  val useSSL = conf.getProperty("irc.use_ssl", "false").toBoolean
 
-  val irc = new IrcConnection
-  irc.setServerAddress(address)
+  val irc = new IrcConnection(address, port, password)
   irc.setCharset(Charset.forName(charset))
   irc.setNick(nickname)
+  irc.setUsingSSL(useSSL)
+  irc.setUsername(username)
   irc.addServerListener(this)
-  irc.addMessageListener(this)  
-  irc.connect()
+  irc.addMessageListener(this)
 
   val random = new Random()
   val detail = "https://github.com/sifue/ranking_ircbot"
 
-
   val twitterEnable = conf.getProperty("twitter.enable").toBoolean
   var twitterClient = if (twitterEnable ) new TwitterClient(conf) else null;
+
+  def connect: Unit = {
+    if(useSSL) {
+      irc.connect(TrustManagerIgnoreService.getIgnoreSSLContext)
+    } else {
+      irc.connect()
+    }
+  }
 
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     try {

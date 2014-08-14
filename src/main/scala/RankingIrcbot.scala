@@ -7,7 +7,8 @@ object RankingIrcbot {
   conf.load(new FileInputStream(configFilepath));
 
   def main(args: Array[String]) = {
-    new IrcClient
+    val client = new IrcClient
+    client.connect
     println(s"RankingIrcbot booted at ${new Date().toString}")
   }
 
