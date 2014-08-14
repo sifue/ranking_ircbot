@@ -46,23 +46,26 @@ class IrcClient extends IrcAdaptor {
   }
 
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
-    try {
-      val trimmedMessage = message.trim
-      handleLog(target, sender, "message",trimmedMessage)
-      if (message.startsWith("@")) sendTweet(target, trimmedMessage)
-      if (message.startsWith("hourlyranking>")) sendRankingHour(target)
-      if (message.startsWith("dailyranking>")) sendRankingDay(target)
-      if (message.startsWith("weeklyranking>")) sendRankingWeek(target)
-      if (message.startsWith("monthlyranking>")) sendRankingMonth(target)
-      if (message.startsWith("yearlyranking>")) sendRankingYear(target)
-      if (message.startsWith("wiseranking>")) sendRankingWise(target)
-      if (message.endsWith("曰く")) sendWise(target, trimmedMessage)
-      if (message.startsWith("覚えろ:")) handleWise(target, sender, "message", message.trim)
-      if (message.startsWith("消して:")) handleWiseDelete(target, sender, "message", trimmedMessage)
-      if (message.startsWith("ping " + nickname)) sendNotice("Working now. > " + sender.getNick() + " " + detail, target.getName)
-    } catch { case e : Throwable =>
-      e.printStackTrace()
-      sendMessage("例外発生: " + e.getMessage, target.getName)
+    if(channels.contains(target.getName)) { // 設定されたチャンネルにいる時だけ反応
+      try {
+        val trimmedMessage = message.trim
+        handleLog(target, sender, "message", trimmedMessage)
+        if (message.startsWith("@")) sendTweet(target, trimmedMessage)
+        if (message.startsWith("hourlyranking>")) sendRankingHour(target)
+        if (message.startsWith("dailyranking>")) sendRankingDay(target)
+        if (message.startsWith("weeklyranking>")) sendRankingWeek(target)
+        if (message.startsWith("monthlyranking>")) sendRankingMonth(target)
+        if (message.startsWith("yearlyranking>")) sendRankingYear(target)
+        if (message.startsWith("wiseranking>")) sendRankingWise(target)
+        if (message.endsWith("曰く")) sendWise(target, trimmedMessage)
+        if (message.startsWith("覚えろ:")) handleWise(target, sender, "message", message.trim)
+        if (message.startsWith("消して:")) handleWiseDelete(target, sender, "message", trimmedMessage)
+        if (message.startsWith("ping " + nickname)) sendNotice("Working now. > " + sender.getNick() + " " + detail, target.getName)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          sendMessage("例外発生: " + e.getMessage, target.getName)
+      }
     }
   }
 
