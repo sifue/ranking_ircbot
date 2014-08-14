@@ -7,9 +7,8 @@ object RankingIrcbot {
   conf.load(new FileInputStream(configFilepath));
 
   def main(args: Array[String]) = {
-    val client = new Client
-    val bootNotice = "ランキングボットが起動しました"
-    println(bootNotice)
+    new IrcClient
+    println("RankingIrcbot booted.")
   }
 
   def getConf() = {

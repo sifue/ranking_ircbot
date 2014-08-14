@@ -10,7 +10,7 @@ import Database.threadLocalSession
 import util.matching.Regex
 import util.Random
 
-class Client extends IrcAdaptor {
+class IrcClient extends IrcAdaptor {
   val conf = RankingIrcbot.getConf()
   val url = conf.getProperty("db.url")
   val driver = conf.getProperty("db.driver")
@@ -37,17 +37,18 @@ class Client extends IrcAdaptor {
 
   override def onMessage(irc: IrcConnection, sender: User, target: Channel, message: String) = {
     try {
-      handleLog(target, sender, "message", message)
-      if (message.startsWith("@")) sendTweet(target, message)
+      val trimmedMessage = message.trim
+      handleLog(target, sender, "message",trimmedMessage)
+      if (message.startsWith("@")) sendTweet(target, trimmedMessage)
       if (message.startsWith("hourlyranking>")) sendRankingHour(target)
       if (message.startsWith("dailyranking>")) sendRankingDay(target)
       if (message.startsWith("weeklyranking>")) sendRankingWeek(target)
       if (message.startsWith("monthlyranking>")) sendRankingMonth(target)
       if (message.startsWith("yearlyranking>")) sendRankingYear(target)
       if (message.startsWith("wiseranking>")) sendRankingWise(target)
-      if (message.endsWith("曰く")) sendWise(target, message)
-      if (message.startsWith("覚えろ:")) handleWise(target, sender, "message", message)
-      if (message.startsWith("消して:")) handleWiseDelete(target, sender, "message", message)
+      if (message.endsWith("曰く")) sendWise(target, trimmedMessage)
+      if (message.startsWith("覚えろ:")) handleWise(target, sender, "message", message.trim)
+      if (message.startsWith("消して:")) handleWiseDelete(target, sender, "message", trimmedMessage)
       if (message.startsWith("ping " + nickname)) sendNotice("Working now. > " + sender.getNick() + " " + detail, target.getName)
     } catch { case e : Throwable =>
       e.printStackTrace()
