@@ -22,6 +22,7 @@ class IrcClient extends IrcAdaptor {
   val password = conf.getProperty("irc.password", "")
   val port = conf.getProperty("irc.port", "6667").toInt
   val useSSL = conf.getProperty("irc.use_ssl", "false").toBoolean
+  val useSlackPost = conf.getProperty("irc.use_slack_post", "false").toBoolean
 
   val irc = new IrcConnection(address, port, password)
   irc.setCharset(Charset.forName(charset))
@@ -283,11 +284,18 @@ class IrcClient extends IrcAdaptor {
   }
 
   def sendMessage(message: String, channelName: String) = {
-   message.grouped(400).foreach(s => irc.createChannel(channelName).send(s.trim + " "))
+    if(useSlackPost) {
+      SlackClient.postMessage(message, channelName)
+    } else {
+      message.grouped(400).foreach(s => irc.createChannel(channelName).send(s.trim + " "))
+    }
   }
   
   def sendNotice(notice: String, channelName: String) = {
-    notice.grouped(400).foreach(s => irc.createChannel(channelName).sendNotice(s.trim + " "))
+    if(useSlackPost) {
+      SlackClient.postMessage(notice, channelName)
+    } else {
+      notice.grouped(400).foreach(s => irc.createChannel(channelName).sendNotice(s.trim + " "))
+    }
   }
-
 }
