@@ -114,12 +114,18 @@ class IrcClient extends IrcAdaptor {
       val b = new StringBuilder
       b.append(target.getName + "の" + title + " ")
       val list = qSort.list
+      var preRank = 1
+      var preCount = 0
       list.zipWithIndex.foreach {
         r =>
-          val n = r._2 + 1
-          b.append("%1$d:%2$s %3$d回, ".format(n, r._1._1, r._1._2))
+          val rank = r._2 + 1
+          val count = r._1._2
+          val sendRank = if(count == preCount){preRank}else{rank}
+          b.append("%1$d:%2$s %3$d回, ".format(sendRank, r._1._1, count))
+          preRank = sendRank
+          preCount =  count
           // 10個 区切りまたは最後なら送信
-          if(n % 10 == 0 || n == list.size) {
+          if(rank % 10 == 0 || rank == list.size) {
             b.deleteCharAt(b.length - 1)
             b.deleteCharAt(b.length - 1)
             sendNotice(b.toString(), target.getName())
@@ -148,12 +154,18 @@ class IrcClient extends IrcAdaptor {
 
       val b = new StringBuilder
       b.append(target.getName + "の" + title + " ")
+      var preRank = 1
+      var preCount = 0
       list.zipWithIndex.foreach {
         r =>
-          val n = r._2 + 1
-          b.append("%1$d:%2$s %3$d個, ".format(n, r._1._1, r._1._2))
+          val rank = r._2 + 1
+          val count = r._1._2
+          val sendRank = if(count == preCount){preRank}else{rank}
+          b.append("%1$d:%2$s %3$d個, ".format(sendRank, r._1._1, count))
+          preRank = sendRank
+          preCount =  count
           // 10個 区切りまたは最後なら送信
-          if(n % 10 == 0 || n == list.size) {
+          if(rank % 10 == 0 || rank == list.size) {
             b.deleteCharAt(b.length - 1)
             b.deleteCharAt(b.length - 1)
             sendNotice(b.toString(), target.getName())
