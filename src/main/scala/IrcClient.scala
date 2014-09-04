@@ -179,13 +179,13 @@ class IrcClient extends IrcAdaptor {
   }
 
   /**
-   * 与えられた文字列の最初の文字の後に/を入れる
+   * 与えられた文字列の最初の文字の後にサイズゼロスペースを入れる
    * @param string
    * @return
    */
   private def slashnize(string: String):String = {
     if (string.size > 1 && useNameSlashnize) {
-      string.head + "/" + string.tail
+      string.head + "\u200B" + string.tail
     } else {
       string
     }
