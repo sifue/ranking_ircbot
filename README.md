@@ -30,6 +30,7 @@ irc.port = 6667
 irc.use_ssl = false
 irc.charset = UTF-8
 irc.use_slack_post = false
+irc.use_name_slashnize = false
 db.url = jdbc:h2:file:ranking_ircbot
 db.driver = org.h2.Driver
 twitter.enable = false

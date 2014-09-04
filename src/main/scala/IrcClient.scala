@@ -6,8 +6,8 @@ import java.nio.charset.Charset
 
 import java.sql.Timestamp
 import scala.slick.driver.H2Driver.simple._
-import util.matching.Regex
-import util.Random
+import scala.util.matching.Regex
+import scala.util.Random
 
 class IrcClient extends IrcAdaptor {
   val conf = RankingIrcbot.getConf()
@@ -23,6 +23,7 @@ class IrcClient extends IrcAdaptor {
   val port = conf.getProperty("irc.port", "6667").toInt
   val useSSL = conf.getProperty("irc.use_ssl", "false").toBoolean
   val useSlackPost = conf.getProperty("irc.use_slack_post", "false").toBoolean
+  val useNameSlashnize = conf.getProperty("irc.use_name_slashnize", "false").toBoolean
 
   val irc = new IrcConnection(address, port, password)
   irc.setCharset(Charset.forName(charset))
@@ -118,10 +119,11 @@ class IrcClient extends IrcAdaptor {
       var preCount = 0
       list.zipWithIndex.foreach {
         r =>
+          val name = r._1._1
           val rank = r._2 + 1
           val count = r._1._2
           val sendRank = if(count == preCount){preRank}else{rank}
-          b.append("%1$d:%2$s %3$d回, ".format(sendRank, r._1._1, count))
+          b.append("%1$d:%2$s %3$d回, ".format(sendRank, slashnize(name), count))
           preRank = sendRank
           preCount =  count
           // 10個 区切りまたは最後なら送信
@@ -158,10 +160,11 @@ class IrcClient extends IrcAdaptor {
       var preCount = 0
       list.zipWithIndex.foreach {
         r =>
+          val name = r._1._1
           val rank = r._2 + 1
           val count = r._1._2
           val sendRank = if(count == preCount){preRank}else{rank}
-          b.append("%1$d:%2$s %3$d個, ".format(sendRank, r._1._1, count))
+          b.append("%1$d:%2$s %3$d個, ".format(sendRank, slashnize(name), count))
           preRank = sendRank
           preCount =  count
           // 10個 区切りまたは最後なら送信
@@ -172,6 +175,19 @@ class IrcClient extends IrcAdaptor {
             b.clear()
           }
       }
+    }
+  }
+
+  /**
+   * 与えられた文字列の最初の文字の後に/を入れる
+   * @param string
+   * @return
+   */
+  private def slashnize(string: String):String = {
+    if (string.size > 1 && useNameSlashnize) {
+      string.head + "/" + string.tail
+    } else {
+      string
     }
   }
 
@@ -209,7 +225,7 @@ class IrcClient extends IrcAdaptor {
         }
         var wiseMessage = random.shuffle(q.list).head
         if (wiseMessage._5.isEmpty) return;
-        sendNotice(trimmedNickname + ": " + wiseMessage._5, target.getName)
+        sendNotice(slashnize(trimmedNickname) + ": " + wiseMessage._5, target.getName)
       }
     }
   }
