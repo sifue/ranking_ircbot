@@ -252,7 +252,7 @@ class IrcClient extends IrcAdaptor {
   }
 
   private def handleWise(target: Channel, sender: User, contentType: String, message: String) {
-    val p : Regex = ".*覚えろ:([^:]+) ([^ ]+)".r;
+    val p : Regex = "^.*覚えろ:([^ ]+) (.+)$".r;
     message match {case p(nickname, wiseMessage) =>
       val trimmedNickname = nickname.trim
       val trimmedWiseMessage = wiseMessage.trim
@@ -270,7 +270,7 @@ class IrcClient extends IrcAdaptor {
   }
 
   private def handleWiseDelete(target: Channel, sender: User, contentType: String, message: String) {
-    val p : Regex = ".*消して:([^:]+) ([^ ]+)".r;
+    val p : Regex = "^.*消して:([^ ]+) (.+)$".r;
     message match {case p(nickname, wiseMessage) =>
       val trimmedNickname = nickname.trim
       val trimmedWiseMessage = wiseMessage.trim
