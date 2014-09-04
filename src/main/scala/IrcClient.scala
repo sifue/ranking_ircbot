@@ -264,7 +264,7 @@ class IrcClient extends IrcAdaptor {
             contentType,
             trimmedWiseMessage,
             new Timestamp(System.currentTimeMillis()))
-        sendNotice((trimmedNickname + ": " + trimmedWiseMessage + " を覚えました"), target.getName)
+        sendNotice((slashnize(trimmedNickname) + ": " + trimmedWiseMessage + " を覚えました"), target.getName)
       }
     }
   }
@@ -281,7 +281,7 @@ class IrcClient extends IrcAdaptor {
           .filter(_.nickname === trimmedNickname)
           .filter(_.content === trimmedWiseMessage)
         q.delete
-        sendNotice((trimmedNickname + ": " + trimmedWiseMessage + " を消しました"), target.getName)
+        sendNotice((slashnize(trimmedNickname) + ": " + trimmedWiseMessage + " を消しました"), target.getName)
       }
     }
   }
