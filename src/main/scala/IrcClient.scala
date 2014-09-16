@@ -5,6 +5,7 @@ import com.sorcix.sirc.Channel
 import java.nio.charset.Charset
 
 import java.sql.Timestamp
+import java.util.Date
 import scala.slick.driver.H2Driver.simple._
 import scala.util.matching.Regex
 import scala.util.Random
@@ -289,6 +290,19 @@ class IrcClient extends IrcAdaptor {
 
   override def onConnect(irc: IrcConnection) = {
     channels.foreach{irc.createChannel(_).join()}
+  }
+
+  val reconnectWaitMilliSec = 3000
+  override def onDisconnect(irc: IrcConnection) = {
+    connect
+    System.err.println(
+      s"Unexpected disconnection and reconnection. (${address}:${port.toString}) at ${new Date().toString}")
+    while (!irc.isConnected) {
+      Thread.sleep(reconnectWaitMilliSec)
+      connect
+      System.err.println(
+        s"Unexpected disconnection and retry reconnection. (${address}:${port.toString}) at ${new Date().toString}")
+    }
   }
 
   // 自分がオペレーターなら参加者全員にオペレータ権限を与える
