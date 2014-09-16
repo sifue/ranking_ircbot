@@ -26,21 +26,26 @@ class IrcClient extends IrcAdaptor {
   val useSlackPost = conf.getProperty("irc.use_slack_post", "false").toBoolean
   val useNameSlashnize = conf.getProperty("irc.use_name_slashnize", "false").toBoolean
 
-  val irc = new IrcConnection(address, port, password)
-  irc.setCharset(Charset.forName(charset))
-  irc.setNick(nickname)
-  irc.setUsingSSL(useSSL)
-  irc.setUsername(username)
-  irc.addServerListener(this)
-  irc.addMessageListener(this)
-
   val random = new Random()
   val detail = "https://github.com/sifue/ranking_ircbot"
 
   val twitterEnable = conf.getProperty("twitter.enable").toBoolean
   var twitterClient = if (twitterEnable ) new TwitterClient(conf) else null;
 
+  private var irc: IrcConnection = null
+
+  private def initConnection: Unit = {
+    this.irc = new IrcConnection(address, port, password)
+    this.irc.setCharset(Charset.forName(charset))
+    this.irc.setNick(nickname)
+    this.irc.setUsingSSL(useSSL)
+    this.irc.setUsername(username)
+    this.irc.addServerListener(this)
+    this.irc.addMessageListener(this)
+  }
+
   def connect: Unit = {
+    initConnection
     if(useSSL) {
       irc.connect(TrustManagerIgnoreService.getIgnoreSSLContext)
     } else {
@@ -294,12 +299,20 @@ class IrcClient extends IrcAdaptor {
 
   val reconnectWaitMilliSec = 3000
   override def onDisconnect(irc: IrcConnection) = {
-    connect
+    try {
+      connect
+    } catch {
+      case e: Throwable => e.printStackTrace()
+    }
     System.err.println(
       s"Unexpected disconnection and reconnection. (${address}:${port.toString}) at ${new Date().toString}")
-    while (!irc.isConnected) {
+    while (!this.irc.isConnected) {
       Thread.sleep(reconnectWaitMilliSec)
-      connect
+      try {
+        connect
+      } catch {
+        case e: Throwable => e.printStackTrace()
+      }
       System.err.println(
         s"Unexpected disconnection and retry reconnection. (${address}:${port.toString}) at ${new Date().toString}")
     }
