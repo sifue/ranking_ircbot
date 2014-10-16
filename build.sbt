@@ -4,7 +4,7 @@ assemblySettings
 
 name := "ranking_ircbot"
 
-version := "3.10"
+version := "4.0"
 
 scalaVersion := "2.11.2"
 
@@ -18,3 +18,14 @@ libraryDependencies ++= List(
 )
 
 mainClass in assembly := Some("RankingIrcbot")
+
+mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+{
+  case PathList("com", "sorcix", "sirc", xs @ _*)  => MergeStrategy.first
+  case x => old(x)
+}
+}
+
+javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
+
+scalacOptions += "-target:jvm-1.7"

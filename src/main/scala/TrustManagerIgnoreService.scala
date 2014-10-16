@@ -23,7 +23,7 @@ object TrustManagerIgnoreService {
       override def getAcceptedIssuers: Array[X509Certificate] = null
       override def checkServerTrusted(p1: Array[X509Certificate], p2: String): Unit = Unit
     })
-    val sslContext = SSLContext.getInstance("SSL");
+    val sslContext = SSLContext.getInstance("TLSv1.2");
     sslContext.init(null, tm, null);
     //ホスト名の検証ルール　何が来てもtrueを返す
     HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier {

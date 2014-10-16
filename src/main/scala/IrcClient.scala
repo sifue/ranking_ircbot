@@ -299,22 +299,26 @@ class IrcClient extends IrcAdaptor {
 
   val reconnectWaitMilliSec = 3000
   override def onDisconnect(irc: IrcConnection) = {
+    System.err.println(
+      s"Unexpected disconnection wait and try reconnection. (${address}:${port.toString}) at ${new Date().toString}")
     try {
+      Thread.sleep(reconnectWaitMilliSec)
       connect
     } catch {
       case e: Throwable => e.printStackTrace()
     }
-    System.err.println(
-      s"Unexpected disconnection and reconnection. (${address}:${port.toString}) at ${new Date().toString}")
+
     while (!this.irc.isConnected) {
-      Thread.sleep(reconnectWaitMilliSec)
+      System.err.println(
+        s"Unexpected disconnection and wait and retry reconnection. (${address}:${port.toString}) at ${new Date().toString}")
       try {
-        connect
+        Thread.sleep(reconnectWaitMilliSec)
+        if(!this.irc.isConnected) {
+          connect
+        }
       } catch {
         case e: Throwable => e.printStackTrace()
       }
-      System.err.println(
-        s"Unexpected disconnection and retry reconnection. (${address}:${port.toString}) at ${new Date().toString}")
     }
   }
 
